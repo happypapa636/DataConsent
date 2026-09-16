@@ -1,9 +1,5 @@
-2026/09/16-17:39:33.144 4adc Recovering log #707
-2026/09/16-17:39:33.165 4adc Delete type=0 #707
-2026/09/16-17:39:33.166 4adc Delete type=3 #705
-2026/09/16-17:39:33.166 523c Compacting 1@0 + 1@1 files
-2026/09/16-17:39:33.176 523c Generated table #710@0: 1 keys, 622 bytes
-2026/09/16-17:39:33.176 523c Compacted 1@0 + 1@1 files => 622 bytes
-2026/09/16-17:39:33.177 523c compacted to: files[ 3 55 0 0 0 0 0 ]
-2026/09/16-17:39:33.179 523c Delete type=2 #671
-2026/09/16-17:39:33.179 523c Delete type=2 #696
+2026/09/16-17:41:26.743 4adc Recovering log #748
+2026/09/16-17:41:26.751 4adc Delete type=0 #748
+2026/09/16-17:41:26.751 4adc Delete type=3 #747
+2026/09/16-17:41:26.752 523c Compacting 2@0 + 0@1 files
+2026/09/16-17:41:26.755 523c compacted to: files[ 6 56 0 0 0 0 0 ]
