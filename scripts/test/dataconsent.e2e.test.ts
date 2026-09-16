@@ -218,12 +218,13 @@ describe(`DataConsent lifecycle (${network})`, () => {
   });
 
   it('expiry: a short consent expires and checks report it', async () => {
-    await org.api!.createConsentRequest(1, userCommitment, 8, 6, 2, false, nowSec()); // 2-second window
+    // Keep the window long enough for a cold proof server to submit the grant.
+    await org.api!.createConsentRequest(1, userCommitment, 8, 6, 120, false, nowSec()); // 2-minute window
     const grantNow = nowSec();
     await user.api!.grantConsent(2, grantNow + 2n, grantNow);
 
     // Wait past expiry (block time based)
-    await new Promise((r) => setTimeout(r, 6000));
+    await new Promise((r) => setTimeout(r, 130_000));
 
     await expect(org.api!.verifyConsent(2, 8, 6)).rejects.toThrow();
     await org.api!.checkConsent(2, 8, 6, nowSec());
