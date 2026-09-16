@@ -1,0 +1,664 @@
+{
+  "compiler-version": "0.31.1",
+  "language-version": "0.23.0",
+  "runtime-version": "0.16.0",
+  "circuits": [
+    {
+      "name": "participantCommitment",
+      "pure": true,
+      "proof": false,
+      "arguments": [
+        {
+          "name": "sk",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "registerOrganization",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "name",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "orgType",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 255
+          }
+        },
+        {
+          "name": "now",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "authorizeOrganization",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "orgId",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        },
+        {
+          "name": "now",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "revokeOrganization",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "orgId",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "createConsentRequest",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "orgId",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        },
+        {
+          "name": "ownerCommitment",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "purposeCode",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 255
+          }
+        },
+        {
+          "name": "dataCategoryCode",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 255
+          }
+        },
+        {
+          "name": "durationSeconds",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        },
+        {
+          "name": "sharingAllowed",
+          "type": {
+            "type-name": "Boolean"
+          }
+        },
+        {
+          "name": "now",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "cancelConsentRequest",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "requestId",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "rejectConsentRequest",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "requestId",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "grantConsent",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "requestId",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        },
+        {
+          "name": "expiresAt",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        },
+        {
+          "name": "now",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "revokeConsent",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "consentId",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "verifyConsent",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "consentId",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        },
+        {
+          "name": "purposeCode",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 255
+          }
+        },
+        {
+          "name": "dataCategoryCode",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 255
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "checkConsent",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "consentId",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        },
+        {
+          "name": "purposeCode",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 255
+          }
+        },
+        {
+          "name": "dataCategoryCode",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 255
+          }
+        },
+        {
+          "name": "now",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    }
+  ],
+  "witnesses": [
+    {
+      "name": "localSecretKey",
+      "arguments": [
+      ],
+      "result type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    }
+  ],
+  "contracts": [
+  ],
+  "ledger": [
+    {
+      "name": "organizations",
+      "index": 0,
+      "exported": true,
+      "storage": "Map",
+      "key": {
+        "type-name": "Uint",
+        "maxval": 18446744073709551615
+      },
+      "value": {
+        "type-name": "Struct",
+        "name": "Organization",
+        "elements": [
+          {
+            "name": "name",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "orgType",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 255
+            }
+          },
+          {
+            "name": "orgCommitment",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 255
+            }
+          },
+          {
+            "name": "registeredAt",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          },
+          {
+            "name": "authorizedAt",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "orgNextId",
+      "index": 1,
+      "exported": true,
+      "storage": "Counter"
+    },
+    {
+      "name": "organizationByCommitment",
+      "index": 2,
+      "exported": true,
+      "storage": "Map",
+      "key": {
+        "type-name": "Bytes",
+        "length": 32
+      },
+      "value": {
+        "type-name": "Uint",
+        "maxval": 18446744073709551615
+      }
+    },
+    {
+      "name": "consentRequests",
+      "index": 3,
+      "exported": true,
+      "storage": "Map",
+      "key": {
+        "type-name": "Uint",
+        "maxval": 18446744073709551615
+      },
+      "value": {
+        "type-name": "Struct",
+        "name": "ConsentRequest",
+        "elements": [
+          {
+            "name": "orgId",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          },
+          {
+            "name": "ownerCommitment",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "purposeCode",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 255
+            }
+          },
+          {
+            "name": "dataCategoryCode",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 255
+            }
+          },
+          {
+            "name": "durationSeconds",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          },
+          {
+            "name": "sharingAllowed",
+            "type": {
+              "type-name": "Boolean"
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 255
+            }
+          },
+          {
+            "name": "createdAt",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "requestNextId",
+      "index": 4,
+      "exported": true,
+      "storage": "Counter"
+    },
+    {
+      "name": "consents",
+      "index": 5,
+      "exported": true,
+      "storage": "Map",
+      "key": {
+        "type-name": "Uint",
+        "maxval": 18446744073709551615
+      },
+      "value": {
+        "type-name": "Struct",
+        "name": "Consent",
+        "elements": [
+          {
+            "name": "requestId",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          },
+          {
+            "name": "orgId",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          },
+          {
+            "name": "purposeCode",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 255
+            }
+          },
+          {
+            "name": "dataCategoryCode",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 255
+            }
+          },
+          {
+            "name": "userCommitment",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 255
+            }
+          },
+          {
+            "name": "sharingAllowed",
+            "type": {
+              "type-name": "Boolean"
+            }
+          },
+          {
+            "name": "createdAt",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          },
+          {
+            "name": "expiresAt",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "consentNextId",
+      "index": 6,
+      "exported": true,
+      "storage": "Counter"
+    },
+    {
+      "name": "accessReceipts",
+      "index": 7,
+      "exported": true,
+      "storage": "Map",
+      "key": {
+        "type-name": "Uint",
+        "maxval": 18446744073709551615
+      },
+      "value": {
+        "type-name": "Struct",
+        "name": "AccessReceipt",
+        "elements": [
+          {
+            "name": "consentId",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          },
+          {
+            "name": "orgId",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          },
+          {
+            "name": "purposeCode",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 255
+            }
+          },
+          {
+            "name": "dataCategoryCode",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 255
+            }
+          },
+          {
+            "name": "result",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 255
+            }
+          },
+          {
+            "name": "checkedAt",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "receiptNextId",
+      "index": 8,
+      "exported": true,
+      "storage": "Counter"
+    },
+    {
+      "name": "authorityCommitment",
+      "index": 9,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "schemaVersion",
+      "index": 10,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Uint",
+        "maxval": 255
+      }
+    }
+  ]
+}

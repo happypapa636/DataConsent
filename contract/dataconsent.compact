@@ -1,0 +1,371 @@
+/**
+ * DataConsent — a privacy-first consent management smart contract for Midnight.
+ *
+ * Registries implemented in a single contract (on-chain, no hardcoded data):
+ *   - OrganizationRegistry      `organizations`
+ *   - ConsentRequestRegistry    `consentRequests`
+ *   - ConsentRegistry           `consents` (grant / expire / revoke state)
+ *   - RevocationRegistry        encoded in Consent.status + user-owned revoke circuit
+ *   - AccessReceiptRegistry     `accessReceipts` (tamper-resistant audit trail)
+ *
+ * Privacy model:
+ *   - The data owner never exposes their identity. Consent records store a
+ *     `userCommitment` — a ZK-friendly hash of a secret that only the owner knows.
+ *   - Only the owner of that secret can revoke (proved in-circuit via witness).
+ *   - Organizations register a commitment the same way; authorization and
+ *     request creation are gated by in-circuit commitment checks.
+ *   - Expiry is enforced against the on-chain block time (blockTimeLt/Gte).
+ *
+ * Status / code conventions (Uint<8>):
+ *   Organization.status : 1 = pending, 2 = authorized, 3 = revoked
+ *   ConsentRequest.status: 1 = open, 2 = granted, 3 = rejected, 4 = cancelled
+ *   Consent.status      : 1 = active, 2 = revoked
+ *   AccessReceipt.result: 1 = valid, 2 = revoked, 3 = expired, 4 = purpose
+ *                         mismatch, 5 = data-category mismatch, 6 = inactive
+ *                         organization
+ *
+ * orgType codes: 1 = research, 2 = healthcare, 3 = finance, 4 = ai,
+ *                5 = marketing, 6 = education, 7 = government, 8 = other
+ * purposeCode / dataCategoryCode are application-level catalog codes
+ * (see api/src/common-types.ts) — stored on-chain as Uint<8>.
+ */
+
+pragma language_version 0.23;
+
+import CompactStandardLibrary;
+
+// ── On-chain state ──────────────────────────────────────────────────────
+
+export ledger organizations: Map<Uint<64>, Organization>;
+export ledger orgNextId: Counter;
+export ledger organizationByCommitment: Map<Bytes<32>, Uint<64>>;
+
+export ledger consentRequests: Map<Uint<64>, ConsentRequest>;
+export ledger requestNextId: Counter;
+
+export ledger consents: Map<Uint<64>, Consent>;
+export ledger consentNextId: Counter;
+
+export ledger accessReceipts: Map<Uint<64>, AccessReceipt>;
+export ledger receiptNextId: Counter;
+
+/** Bound atomically to the deployer's private identity; cannot be replaced. */
+export sealed ledger authorityCommitment: Bytes<32>;
+export sealed ledger schemaVersion: Uint<8>;
+
+struct Organization {
+  name: Bytes<32>;
+  orgType: Uint<8>;
+  orgCommitment: Bytes<32>;
+  status: Uint<8>;
+  registeredAt: Uint<64>;
+  authorizedAt: Uint<64>;
+}
+
+struct ConsentRequest {
+  orgId: Uint<64>;
+  ownerCommitment: Bytes<32>;
+  purposeCode: Uint<8>;
+  dataCategoryCode: Uint<8>;
+  durationSeconds: Uint<64>;
+  sharingAllowed: Boolean;
+  status: Uint<8>;
+  createdAt: Uint<64>;
+}
+
+struct Consent {
+  requestId: Uint<64>;
+  orgId: Uint<64>;
+  purposeCode: Uint<8>;
+  dataCategoryCode: Uint<8>;
+  userCommitment: Bytes<32>;
+  status: Uint<8>;
+  sharingAllowed: Boolean;
+  createdAt: Uint<64>;
+  expiresAt: Uint<64>;
+}
+
+struct AccessReceipt {
+  consentId: Uint<64>;
+  orgId: Uint<64>;
+  purposeCode: Uint<8>;
+  dataCategoryCode: Uint<8>;
+  result: Uint<8>;
+  checkedAt: Uint<64>;
+}
+
+/** The caller's secret key — kept off-chain, proven in ZK. */
+witness localSecretKey(): Bytes<32>;
+
+// ── Pure helpers ────────────────────────────────────────────────────────
+
+/** Domain-separated commitment for any participant (user, org or authority). */
+export pure circuit participantCommitment(sk: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<2, Bytes<32>>>([pad(32, "dataconsent:identity"), sk]);
+}
+
+// ── Authority (consent authority / deployer) ────────────────────────────
+
+constructor() {
+  authorityCommitment = disclose(participantCommitment(localSecretKey()));
+  schemaVersion = 2;
+}
+
+/** Caller timestamps are bounded by block time, allowing ten minutes for proving. */
+circuit assertRecentTime(now: Uint<64>): [] {
+  assert(disclose(now) > 0, "timestamp is required");
+  assert(blockTimeGte(disclose(now)), "timestamp is in the future");
+  assert(disclose(now) <= 18446744073709551015, "timestamp is out of range");
+  assert(blockTimeLt((disclose(now) + 600) as Uint<64>), "timestamp is stale; retry with current time");
+}
+
+// ── OrganizationRegistry ────────────────────────────────────────────────
+
+/** Any organization may register; the authority must authorize before use. */
+export circuit registerOrganization(name: Bytes<32>, orgType: Uint<8>, now: Uint<64>): [] {
+  assertRecentTime(now);
+  assert(name != pad(32, ""), "organization name is required");
+  assert(disclose(orgType) >= 1, "organization type is required");
+  assert(disclose(orgType) <= 8, "organization type is invalid");
+  const identity = disclose(participantCommitment(localSecretKey()));
+  assert(!organizationByCommitment.member(identity), "identity already registered an organization");
+  orgNextId.increment(1);
+  const orgId = disclose(orgNextId.read() as Uint<64>);
+  organizationByCommitment.insert(identity, orgId);
+  organizations.insert(orgId, Organization {
+    name: disclose(name),
+    orgType: disclose(orgType),
+    orgCommitment: disclose(participantCommitment(localSecretKey())),
+    status: 1,
+    registeredAt: disclose(now),
+    authorizedAt: 0,
+  });
+}
+
+/** Authority authorizes a pending organization. */
+export circuit authorizeOrganization(orgId: Uint<64>, now: Uint<64>): [] {
+  assertRecentTime(now);
+  assert(authorityCommitment == participantCommitment(localSecretKey()), "only the authority");
+  assert(organizations.member(disclose(orgId)), "organization not found");
+  const org = organizations.lookup(disclose(orgId));
+  assert(org.status == 1, "organization is not pending");
+  organizations.insert(disclose(orgId), Organization {
+    name: org.name,
+    orgType: org.orgType,
+    orgCommitment: org.orgCommitment,
+    status: 2,
+    registeredAt: org.registeredAt,
+    authorizedAt: disclose(now),
+  });
+}
+
+/** Authority revokes an organization (it can no longer create requests). */
+export circuit revokeOrganization(orgId: Uint<64>): [] {
+  assert(authorityCommitment == participantCommitment(localSecretKey()), "only the authority");
+  assert(organizations.member(disclose(orgId)), "organization not found");
+  const org = organizations.lookup(disclose(orgId));
+  assert(org.status != 3, "organization already revoked");
+  organizations.insert(disclose(orgId), Organization {
+    name: org.name,
+    orgType: org.orgType,
+    orgCommitment: org.orgCommitment,
+    status: 3,
+    registeredAt: org.registeredAt,
+    authorizedAt: org.authorizedAt,
+  });
+}
+
+// ── ConsentRequestRegistry ──────────────────────────────────────────────
+
+/** An authorized organization creates a consent request. */
+export circuit createConsentRequest(
+  orgId: Uint<64>,
+  ownerCommitment: Bytes<32>,
+  purposeCode: Uint<8>,
+  dataCategoryCode: Uint<8>,
+  durationSeconds: Uint<64>,
+  sharingAllowed: Boolean,
+  now: Uint<64>,
+): [] {
+  assertRecentTime(now);
+  assert(organizations.member(disclose(orgId)), "organization not found");
+  const org = organizations.lookup(disclose(orgId));
+  assert(org.orgCommitment == participantCommitment(localSecretKey()), "not the registered organization");
+  assert(org.status == 2, "organization is not authorized");
+  assert(ownerCommitment != pad(32, ""), "owner commitment is required");
+  assert(disclose(durationSeconds) > 0, "duration must be positive");
+  assert(disclose(durationSeconds) <= 31536000, "duration exceeds one year");
+  assert(disclose(purposeCode) >= 1 && disclose(purposeCode) <= 8, "invalid purpose code");
+  assert(disclose(dataCategoryCode) >= 1 && disclose(dataCategoryCode) <= 8, "invalid data category code");
+  requestNextId.increment(1);
+  const requestId = disclose(requestNextId.read() as Uint<64>);
+  consentRequests.insert(requestId, ConsentRequest {
+    orgId: disclose(orgId),
+    ownerCommitment: disclose(ownerCommitment),
+    purposeCode: disclose(purposeCode),
+    dataCategoryCode: disclose(dataCategoryCode),
+    durationSeconds: disclose(durationSeconds),
+    sharingAllowed: disclose(sharingAllowed),
+    status: 1,
+    createdAt: disclose(now),
+  });
+}
+
+/** The requesting organization cancels its open request. */
+export circuit cancelConsentRequest(requestId: Uint<64>): [] {
+  assert(consentRequests.member(disclose(requestId)), "request not found");
+  const req = consentRequests.lookup(disclose(requestId));
+  const org = organizations.lookup(req.orgId);
+  assert(org.orgCommitment == participantCommitment(localSecretKey()), "not the requesting organization");
+  assert(req.status == 1, "request is not open");
+  consentRequests.insert(disclose(requestId), ConsentRequest {
+    orgId: req.orgId,
+    ownerCommitment: req.ownerCommitment,
+    purposeCode: req.purposeCode,
+    dataCategoryCode: req.dataCategoryCode,
+    durationSeconds: req.durationSeconds,
+    sharingAllowed: req.sharingAllowed,
+    status: 4,
+    createdAt: req.createdAt,
+  });
+}
+
+/** A data owner declines an open request (public, no identity revealed). */
+export circuit rejectConsentRequest(requestId: Uint<64>): [] {
+  assert(consentRequests.member(disclose(requestId)), "request not found");
+  const req = consentRequests.lookup(disclose(requestId));
+  assert(req.ownerCommitment == participantCommitment(localSecretKey()), "not the requested data owner");
+  assert(req.status == 1, "request is not open");
+  consentRequests.insert(disclose(requestId), ConsentRequest {
+    orgId: req.orgId,
+    ownerCommitment: req.ownerCommitment,
+    purposeCode: req.purposeCode,
+    dataCategoryCode: req.dataCategoryCode,
+    durationSeconds: req.durationSeconds,
+    sharingAllowed: req.sharingAllowed,
+    status: 3,
+    createdAt: req.createdAt,
+  });
+}
+
+// ── ConsentRegistry + RevocationRegistry ────────────────────────────────
+
+/**
+ * The data owner grants consent for an open request.
+ * `expiresAt` must be in the future and within the requested duration window
+ * (both enforced against the on-chain block time).
+ */
+export circuit grantConsent(requestId: Uint<64>, expiresAt: Uint<64>, now: Uint<64>): [] {
+  assertRecentTime(now);
+  assert(consentRequests.member(disclose(requestId)), "request not found");
+  const req = consentRequests.lookup(disclose(requestId));
+  assert(req.status == 1, "request is not open");
+  const org = organizations.lookup(req.orgId);
+  assert(req.ownerCommitment == participantCommitment(localSecretKey()), "not the requested data owner");
+  assert(org.status == 2, "organization is not authorized");
+  assert(disclose(expiresAt) > disclose(now), "expiry must follow grant time");
+  assert(disclose(expiresAt) <= disclose(now) + req.durationSeconds, "expiry exceeds requested duration");
+  assert(blockTimeLt(disclose(expiresAt)), "expiry must be in the future");
+  assert(disclose(expiresAt) >= req.durationSeconds, "expiry before duration window");
+  assert(blockTimeGte(disclose(expiresAt) - req.durationSeconds), "expiry exceeds requested duration");
+  consentNextId.increment(1);
+  const consentId = disclose(consentNextId.read() as Uint<64>);
+  consents.insert(consentId, Consent {
+    requestId: disclose(requestId),
+    orgId: req.orgId,
+    purposeCode: req.purposeCode,
+    dataCategoryCode: req.dataCategoryCode,
+    userCommitment: disclose(participantCommitment(localSecretKey())),
+    status: 1,
+    sharingAllowed: req.sharingAllowed,
+    createdAt: disclose(now),
+    expiresAt: disclose(expiresAt),
+  });
+  consentRequests.insert(disclose(requestId), ConsentRequest {
+    orgId: req.orgId,
+    ownerCommitment: req.ownerCommitment,
+    purposeCode: req.purposeCode,
+    dataCategoryCode: req.dataCategoryCode,
+    durationSeconds: req.durationSeconds,
+    sharingAllowed: req.sharingAllowed,
+    status: 2,
+    createdAt: req.createdAt,
+  });
+}
+
+/** Only the data owner (proved by commitment) can revoke their consent. */
+export circuit revokeConsent(consentId: Uint<64>): [] {
+  assert(consents.member(disclose(consentId)), "consent not found");
+  const consent = consents.lookup(disclose(consentId));
+  assert(consent.userCommitment == participantCommitment(localSecretKey()), "not the data owner");
+  assert(consent.status == 1, "consent is not active");
+  consents.insert(disclose(consentId), Consent {
+    requestId: consent.requestId,
+    orgId: consent.orgId,
+    purposeCode: consent.purposeCode,
+    dataCategoryCode: consent.dataCategoryCode,
+    userCommitment: consent.userCommitment,
+    status: 2,
+    sharingAllowed: consent.sharingAllowed,
+    createdAt: consent.createdAt,
+    expiresAt: consent.expiresAt,
+  });
+}
+
+// ── Verification + AccessReceiptRegistry ────────────────────────────────
+
+/**
+ * Hard verification gate for an organization before data access.
+ * Fails the transaction (provably) unless every condition holds:
+ * organization matches & is authorized, consent active, purpose matches,
+ * data category matches, and consent has not expired (block time).
+ */
+export circuit verifyConsent(consentId: Uint<64>, purposeCode: Uint<8>, dataCategoryCode: Uint<8>): [] {
+  assert(consents.member(disclose(consentId)), "consent not found");
+  const consent = consents.lookup(disclose(consentId));
+  const org = organizations.lookup(consent.orgId);
+  assert(org.orgCommitment == participantCommitment(localSecretKey()), "caller is not the consented organization");
+  assert(org.status == 2, "organization is not authorized");
+  assert(consent.status == 1, "consent is not active");
+  assert(consent.purposeCode == disclose(purposeCode), "purpose mismatch");
+  assert(consent.dataCategoryCode == disclose(dataCategoryCode), "data category mismatch");
+  assert(blockTimeLt(consent.expiresAt), "consent expired");
+}
+
+/**
+ * Audit check: evaluates a consent (without asserting) and records an
+ * on-chain AccessReceipt with the outcome, so both approvals and failed
+ * attempts form a tamper-resistant audit trail.
+ */
+export circuit checkConsent(consentId: Uint<64>, purposeCode: Uint<8>, dataCategoryCode: Uint<8>, now: Uint<64>): [] {
+  assertRecentTime(now);
+  assert(consents.member(disclose(consentId)), "consent not found");
+  const consent = consents.lookup(disclose(consentId));
+  const org = organizations.lookup(consent.orgId);
+  assert(org.orgCommitment == participantCommitment(localSecretKey()), "caller is not the consented organization");
+
+  const purposeOk = consent.purposeCode == disclose(purposeCode);
+  const categoryOk = consent.dataCategoryCode == disclose(dataCategoryCode);
+  const revoked = consent.status == 2;
+  const expired = blockTimeGte(consent.expiresAt);
+  const orgOk = org.status == 2;
+
+  const result: Uint<8> =
+    disclose(revoked) ? 2 :
+    disclose(expired) ? 3 :
+    disclose(!purposeOk) ? 4 :
+    disclose(!categoryOk) ? 5 :
+    disclose(!orgOk) ? 6 :
+    1;
+
+  receiptNextId.increment(1);
+  const receiptId = disclose(receiptNextId.read() as Uint<64>);
+  accessReceipts.insert(receiptId, AccessReceipt {
+    consentId: disclose(consentId),
+    orgId: consent.orgId,
+    purposeCode: disclose(purposeCode),
+    dataCategoryCode: disclose(dataCategoryCode),
+    result: disclose(result),
+    checkedAt: disclose(now),
+  });
+}

@@ -1,0 +1,33 @@
+{
+  "name": "dataconsent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "DataConsent — privacy-first consent management on Midnight",
+  "workspaces": [
+    "contract",
+    "api",
+    "scripts",
+    "web"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "compile": "npm run compile --workspace contract",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test:e2e:local",
+    "env:up": "node scripts/compose.mjs up -d",
+    "env:down": "node scripts/compose.mjs down",
+    "proof:up": "node scripts/compose.mjs up -d proof-server",
+    "proof:down": "node scripts/compose.mjs stop proof-server",
+    "test:e2e:local": "npm run test:e2e:local --workspace scripts",
+    "test:e2e:preprod": "npm run test:e2e:preprod --workspace scripts",
+    "deploy:preprod": "npm run deploy:preprod --workspace scripts",
+    "web": "npm run dev --workspace web"
+  },
+  "devDependencies": {
+    "picomatch": "^4.0.7",
+    "readable-stream": "^4.7.0"
+  }
+}

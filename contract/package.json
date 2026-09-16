@@ -1,0 +1,13 @@
+{
+  "name": "dataconsent-contract",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "compile": "node scripts/compile.mjs"
+  },
+  "dependencies": {
+    "@midnight-ntwrk/compact-js": "2.5.1"
+  }
+}

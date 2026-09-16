@@ -1,0 +1,25 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e10]:
+      - strong [ref=e11]: DataConsent
+      - generic [ref=e12]: Private permission layer
+    - generic [ref=e13]:
+      - paragraph [ref=e14]: MIDNIGHT PREPROD
+      - heading [level=1] [ref=e15]:
+        - text: Your data.
+        - emphasis [ref=e16]: Your control.
+      - paragraph [ref=e17]: Give permission with precision, prove access without exposing identity, and revoke it whenever you choose.
+      - button "Connect Lace wallet" [ref=e18] [cursor=pointer]
+      - generic [ref=e28]:
+        - generic [ref=e29]: Private by default
+        - generic [ref=e34]: On-chain audit trail
+    - generic [ref=e37]:
+      - generic [ref=e38]: DataConsent app
+      - generic [ref=e39]: Midnight network
+  - generic [ref=e40]:
+    - generic [ref=e49]:
+      - strong [ref=e50]: Identity stays yours
+      - paragraph [ref=e51]: Only a commitment is recorded. Your personal data never leaves its secure home.
+    - generic [ref=e52]:
+      - generic [ref=e53]: Consent registry
+      - generic [ref=e54]: Ready to connect
