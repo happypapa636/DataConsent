@@ -2,7 +2,7 @@
  * DataConsent end-to-end test: deploy → register → authorize →
  * request → grant → verify → check/receipts → revoke → expiry + negatives.
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { WebSocket } from 'ws';
 import { setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 import { deployContract, type DeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
@@ -32,6 +32,9 @@ const logger = pino({
   level: process.env['LOG_LEVEL'] ?? 'info',
   transport: { target: 'pino-pretty' },
 });
+
+// Midnight proof generation can exceed Vitest's five-second default on a cold local stack.
+vi.setConfig({ testTimeout: 20 * 60_000, hookTimeout: 20 * 60_000 });
 
 const network = process.env['MIDNIGHT_NETWORK'] ?? 'local';
 const ZK_CONFIG_PATH = path.resolve(
