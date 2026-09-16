@@ -1,6 +1,7 @@
-2026/09/16-17:38:39.773 3b58 Recovering log #685
-2026/09/16-17:38:39.773 3b58 Level-0 table #687: started
-2026/09/16-17:38:39.778 3b58 Level-0 table #687: 623 bytes OK
-2026/09/16-17:38:39.783 3b58 Delete type=0 #685
-2026/09/16-17:38:39.783 3b58 Delete type=3 #683
-2026/09/16-17:38:39.784 523c Moved #647 to level-1 472 bytes OK: files[ 3 55 0 0 0 0 0 ]
+2026/09/16-17:39:32.935 3b58 Recovering log #704
+2026/09/16-17:39:32.935 3b58 Level-0 table #706: started
+2026/09/16-17:39:32.942 3b58 Level-0 table #706: 628 bytes OK
+2026/09/16-17:39:32.949 3b58 Delete type=0 #704
+2026/09/16-17:39:32.949 3b58 Delete type=3 #703
+2026/09/16-17:39:32.950 523c Compacting 1@0 + 1@1 files
+2026/09/16-17:39:32.952 523c compacted to: files[ 4 55 0 0 0 0 0 ]
