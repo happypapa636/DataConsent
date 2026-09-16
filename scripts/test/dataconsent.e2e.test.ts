@@ -150,7 +150,7 @@ describe(`DataConsent lifecycle (${network})`, () => {
     const ledger = await ledgerOf();
     expect(ledger.authorityCommitment.some((b: number) => b !== 0)).toBe(true);
     expect(ledger.schemaVersion).toBe(2n);
-  });
+  }, 20 * 60_000);
 
   it('registers a pending organization, then the authority authorizes it', async () => {
     await org.api!.registerOrganization('Acme Health Analytics', 2, nowSec());
