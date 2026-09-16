@@ -139,6 +139,12 @@ After deployment, open the Vercel URL in the same browser profile as Lace and te
 - A receipt proves that the contract evaluated a consent check. It does not by itself force an external organization to delete or stop processing data.
 - For production, add an off-chain integration service that enforces successful checks before releasing encrypted data, sends revocation/expiry notifications, and maintains the organization’s retention and compliance workflows.
 
+## Release notes for registry schema v2
+
+Schema v2 binds the authority commitment in the Compact constructor, so no later caller can claim the authority. It also records a schema version, prevents one identity from registering multiple organizations, validates catalog codes and maximum request duration on-chain, bounds client timestamps against block time, and rejects stale or future timestamps. The browser keeps a separate 32-byte identity secret for each connected wallet account and displays complete commitments when users need to copy or share them; abbreviated values are reserved for visual previews.
+
+The setup screen intentionally supports two safe paths: deploy a new v2 registry from the connected Lace wallet, or set `VITE_CONTRACT_ADDRESS` to join an existing v2 registry. A legacy v1 address is rejected with a clear compatibility message because its authority initialization model is no longer safe for new deployments.
+
 ## Known deployment prerequisites
 
 The frontend build is self-contained, but full chain execution depends on external state: Docker for local testing, a running proof server for browser transactions, a compatible Lace connector, funded Preprod tNIGHT/tDUST, and a Vercel-authenticated deployment target.
