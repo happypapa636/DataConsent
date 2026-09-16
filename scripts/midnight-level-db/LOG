@@ -1,5 +1,5 @@
-2026/09/16-17:43:02.474 4adc Recovering log #789
-2026/09/16-17:43:02.481 4adc Delete type=0 #789
-2026/09/16-17:43:02.481 4adc Delete type=3 #787
-2026/09/16-17:43:02.481 523c Compacting 6@0 + 1@1 files
-2026/09/16-17:43:02.485 523c compacted to: files[ 7 57 0 0 0 0 0 ]
+2026/09/16-17:43:38.978 4adc Recovering log #807
+2026/09/16-17:43:38.988 4adc Delete type=0 #807
+2026/09/16-17:43:38.988 4adc Delete type=3 #806
+2026/09/16-17:43:38.989 523c Compacting 7@0 + 1@1 files
+2026/09/16-17:43:38.991 523c compacted to: files[ 8 57 0 0 0 0 0 ]
